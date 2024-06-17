@@ -39,8 +39,6 @@ void bucketSort(float A[], int n, int limit)
     my_id = omp_get_thread_num();
     num_threads = omp_get_num_threads();
 
-    fprintf(stderr, "%d ", my_id);
-
     #pragma omp parallel for private(i)
     for (i = my_id*(n/num_threads); i < (my_id + 1)*(n/num_threads); i++)
     {
@@ -65,8 +63,7 @@ void bucketSort(float A[], int n, int limit)
     {
         bi = (float)n * (A[i] / (float)limit); 
 
-        if(i > 250 && i < 300)
-            fprintf(stderr, "%.2f %.2f %.2f %d \n", (float)n, A[i], (float)limit, bi);
+        //fprintf(stderr, "%.2f %.2f %.2f %d \n", (float)n, A[i], (float)limit, bi);
         
         b[bi][pos[bi]] = A[i];
         pos[bi]++;
