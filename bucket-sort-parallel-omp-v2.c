@@ -3,10 +3,10 @@
 #include <time.h>
 #include <omp.h>
 
-#define max_threads 8
+#define threads 8
 
-// Ordenação com Insertion Sort
-void insertionSort(float  bucket[], int pos)
+// Ordenação dos itens em cada bucket com Insertion Sort
+void insertionSort(float bucket[], int pos)
 {
     for (int i = 1; i < pos; ++i)
     {
@@ -21,93 +21,82 @@ void insertionSort(float  bucket[], int pos)
     }
 }
 
-// Ordenando array A com Bucket Sort
+// Ordenando o vetor A com Bucket Sort
 void bucketSort(float A[], int n, int limit)
 {
-    int i, j; // Contadores
+    int i, j, k; // Contadores
     int bi; // Índice primário dos buckets
 
-    int my_id;
-    int num_threads;
-
     // 1 - Criando N Buckets
-    float **b = (float **)malloc(n * sizeof(float *)); // Número de buckets
+    float **b = (float **)malloc(n * sizeof(float *)); // Alocando memória para os N buckets
     int *pos = (int *)calloc(n, sizeof(int)); // índice secundário dos buckets
 
-#pragma omp parallel num_threads(8) private(my_id)
-{
-    my_id = omp_get_thread_num();
-    num_threads = omp_get_num_threads();
-
-    #pragma omp parallel for private(i)
-    for (i = my_id*(n/num_threads); i < (my_id + 1)*(n/num_threads); i++)
-    {
-    // my_id = 0 -> i = 00 -> limite 0+1 * 10 = 10
-    // my_id = 1 -> i = 10 -> limite 1+1 * 10 = 20
-    // my_id = 2 -> i = 20 -> limite 2+1 * 10 = 30
-    // my_id = 3 -> i = 30 -> limite 3+1 * 10 = 40
-    // my_id = 4 -> i = 40 -> limite 4+1 * 10 = 50
-    // my_id = 5 -> i = 50 -> limite 5+1 * 10 = 60
-    // my_id = 6 -> i = 60 -> limite 6+1 * 10 = 70
-    // my_id = 7 -> i = 70 -> limite 7+1 * 10 = 80
-
-        b[i] = (float *)malloc(n * sizeof(float));
+    for (i = 0; i < n; i++){
+        b[i] = (float *)malloc(n * sizeof(float)); //Alocando memória para os N possíveis itens
     }
 
-    #pragma omp barrier
-
-    // 2 - Colocando os elementos em diferentes buckets
-
-    #pragma omp parallel for private(i, bi)
-    for (i = my_id*(n/num_threads); i < (my_id + 1)*(n/num_threads); i++)
+    #pragma omp parallel num_threads(threads) private(i, bi) shared(b, pos, A)
     {
-        bi = (float)n * (A[i] / (float)limit); 
+        int my_id = omp_get_thread_num();
+        int num_threads = omp_get_num_threads();
+        int index_local = 0;
+        int n_per_thread = n / num_threads;
+        int start = my_id * n_per_thread;
+        int end = (my_id + 1) * n_per_thread;
 
-        //fprintf(stderr, "%.2f %.2f %.2f %d \n", (float)n, A[i], (float)limit, bi);
+        if (my_id == num_threads - 1) {
+            end = n;
+        }
         
-        b[bi][pos[bi]] = A[i];
-        pos[bi]++;
-    }
+        // 2 - Colocando os elementos em diferentes buckets
 
-    #pragma omp barrier
-
-/*
-    #pragma omp for private(i)
-    for (i = my_id*(n/num_threads); i < (my_id + 1)*(n/num_threads); i++)
-    {
-        for(j = 0; j < pos[i]; i++)
+        #pragma omp for schedule(static)
+        for (i = start; i < end; i++)
         {
-            printf("%d", b[i][j]);
-        }
-    }
-*/
-    
-    // 3 - Ordenando cada bucket com Insertion Sort
-    #pragma omp parallel for private(i)
-    for (i = my_id*(n/num_threads); i < (my_id + 1)*(n/num_threads); i++)
-    {
-        insertionSort(b[i], pos[i]);
-    }
+            bi = (int)((float)(n - 1) * (A[i] / (float)limit));
 
-    #pragma omp barrier
-
-    // 4 - Juntar os buckets novamente em A[]
-    int index = 0;
-
-    #pragma omp single
-    for (i = 0; i < n; i++)
-    {
-        #pragma omp task private(j, index)
-        for (j = 0; j < pos[i]; j++)
-        {
-            A[index++] = b[i][j];
+            #pragma omp critical
+            {
+                b[bi][pos[bi]] = A[i];
+                pos[bi] += 1;
+            }        
         }
 
-        free(b[i]); // Liberando a memória alocada para o bucket
+        #pragma omp barrier
+        
+        // 3 - Ordenando cada bucket com Insertion Sort
+        #pragma omp for
+        for (i = 0; i < n; i++)
+        {
+            if(pos[i] > 0){
+                insertionSort(b[i], pos[i]);
+            }
+        }
+
+        #pragma omp barrier
+        
+        // 4 - Juntar os buckets novamente em A[]
+
+        for (i = 0; i < start; i++)
+        {
+            index_local += pos[i];
+        }
+
+        for (i = start; i < end; i++)
+        {
+            for (j = 0; j < pos[i]; j++)
+            {
+                #pragma omp critical
+                {
+                    A[index_local++] = b[i][j];
+                }
+            }
+            free(b[i]);
+        }
+
+        #pragma omp barrier
     }
 
-    #pragma omp barrier
-}
     free(b);    // Liberando a memória alocada para os ponteiros dos buckets
     free(pos); // Liberando a memória alocada para os tamanhos dos buckets
 }
@@ -139,17 +128,18 @@ int main()
 
     t2 = omp_get_wtime() - t1;
 
-    printf("Array ordenado em %f segundos\n", t2);
+    printf("\nArray ordenado em %f segundos\n", t2);
 
-    /*for (i = 0; i < n; i++)
+    for (i = 0; i < n; i++)
     {
-        printf("%f ", A[i]);
+        printf("%.0f ", A[i]);
 
-        if (((i + 1) % 10) == 0)
-        {
+        if((i + 1) % 10 == 0){
             printf("\n");
         }
-    }*/
+    }
+
+    printf("\n");
 
     return 0;
 }
