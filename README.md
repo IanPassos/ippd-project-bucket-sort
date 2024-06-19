@@ -47,4 +47,7 @@ Para calcular o tempo que o algoritmo demora para executar, foram utilizadas var
 ## Referências
 
 [GeeksForGeeks Bucket Sort](https://www.geeksforgeeks.org/bucket-sort-2)
+
 [OpenMP](https://www.openmp.org/)
+
+[GitHub Parallelized Bucket Sort](https://github.com/adricarda/parallel-Bucket-Sort)
