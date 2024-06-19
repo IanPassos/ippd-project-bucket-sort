@@ -1,6 +1,7 @@
-![image](https://github.com/IanPassos/ippd-project-bucket-sort/assets/86252440/0a7d7ef9-0526-4484-b89c-2a0405532765)# ippd-project-bucket-sort
+# ippd-project-bucket-sort
 
 ## Projeto da disciplina Introdução à Programação Paralela e Distribuída
+Professor: Alexandro Baldassin
 Alunos: Ian Passos e Anael Porto
 
 ## Objetivo
@@ -39,4 +40,11 @@ Passo 4 - Juntar os baldes em um único vetor em ordem
 
 A ideia de paralelizar este algoritmo é permitir que ele seja executado da forma mais rápida e eficiente possível para vetores de tamanhos elevados.
 
-Para isso, threads foram criadas dentro da função bucketSort. Cada thread é responsável por uma quantidade de buckets equivalente a: tamanho do array/número de threads. 
+Para isso, threads foram criadas dentro da função bucketSort. Os laços paralelizados foram: Ordenação dos baldes com Insertion Sort e junção dos baldes em um único vetor.
+
+Para calcular o tempo que o algoritmo demora para executar, foram utilizadas variáveis de tempo do OpenMP.
+
+## Referências
+
+[GeeksForGeeks Bucket Sort](https://www.geeksforgeeks.org/bucket-sort-2)
+[OpenMP](https://www.openmp.org/)
