@@ -2,6 +2,7 @@
 
 ## Projeto da disciplina Introdução à Programação Paralela e Distribuída
 Professor: Alexandro Baldassin
+
 Alunos: Ian Passos e Anael Porto
 
 ## Objetivo
